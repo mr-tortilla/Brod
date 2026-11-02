@@ -1,0 +1,98 @@
+# Релиз: git tag -a v0.2.0 -m "v0.2.0" && git push --follow-tags
+# Собирает пакеты для Linux и установщик для Windows и прикладывает их к GitHub Release.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  # ручной запуск из вкладки Actions — для тега, который уже есть на GitHub
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Тег релиза, например v0.2.1"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Сборка на старой Ubuntu: бинарник требует glibc этой системы и запустится на ней и всех новее.
+    runs-on: ubuntu-22.04
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0 # нужна история тегов для git describe
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Системные зависимости
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev nsis
+
+      - name: Wails и nfpm
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+
+      - name: Версия
+        id: version
+        run: |
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # версия в свойствах exe на Windows
+          jq --arg v "$VERSION" '.info.productVersion = $v' wails.json > wails.json.tmp
+          mv wails.json.tmp wails.json
+
+      - name: Linux-пакеты
+        run: make packages VERSION=${{ steps.version.outputs.version }}
+
+      # после сборки: main встраивает frontend/dist, которого нет в репозитории
+      - name: Тесты
+        run: make test
+
+      - name: Windows
+        run: |
+          make installer-windows VERSION=${{ steps.version.outputs.version }}
+          # portable-версия — тот же exe в zip вместе с лицензиями
+          zip -9 -j build/dist/brod-${{ steps.version.outputs.version }}-windows-portable.zip \
+            build/bin/brod.exe LICENSE THIRD_PARTY_LICENSES.txt
+
+      - name: Файлы релиза
+        run: |
+          V=${{ steps.version.outputs.version }}
+          mv build/bin/brod-amd64-installer.exe "build/dist/brod-$V-windows-setup.exe"
+          cd build/dist && sha256sum * > SHA256SUMS.txt && ls -la
+
+      - name: Описание релиза из CHANGELOG
+        run: |
+          V=${{ steps.version.outputs.version }}
+          # раздел «## [V]» до следующего «## [»
+          awk -v v="$V" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > notes.md
+          cat >> notes.md <<'EOF'
+
+          ### Установка
+          - **Windows** — `*-windows-setup.exe`. Для режима TUN Brod попросит перезапуск с правами администратора.
+          - **Ubuntu / Debian / Mint** — `sudo apt install ./brod_*_amd64.deb`
+          - **Fedora** — `sudo dnf install ./brod-*.x86_64.rpm`, **openSUSE** — `sudo zypper install ./brod-*.x86_64.rpm`
+          - **Arch / Manjaro** — `sudo pacman -U ./brod-*-x86_64.pkg.tar.zst`
+          EOF
+          cat notes.md
+
+      # Если релиз с этим тегом уже создан вручную, файлы и описание добавятся в него.
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.TAG }}
+          name: Brod ${{ steps.version.outputs.version }}
+          body_path: notes.md
+          files: build/dist/*
