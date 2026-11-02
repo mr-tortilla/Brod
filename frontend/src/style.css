@@ -1,0 +1,111 @@
+:root {
+    --bg: #11141a;
+    --panel: #181c24;
+    --panel-2: #1f2430;
+    --border: #2a3040;
+    --text: #e6e9ef;
+    --muted: #8a93a6;
+    --accent: #4f8cff;
+    --accent-hover: #6a9eff;
+    --good: #3ecf8e;
+    --warn: #f5b942;
+    --bad: #ff5d5d;
+    --border-strong: #3a4256;
+    --overlay: rgba(0, 0, 0, .55);
+    --shadow: 0 8px 24px rgba(0, 0, 0, .4);
+    --radius: 8px;
+    color-scheme: dark;
+}
+
+/* Светлая тема. Тёмная — по умолчанию (:root выше); data-theme ставит theme.ts. */
+:root[data-theme="light"] {
+    --bg: #f3f5f9;
+    --panel: #ffffff;
+    --panel-2: #eaeef5;
+    --border: #d8dde7;
+    --border-strong: #b9c1d0;
+    --text: #1b2130;
+    --muted: #616b80;
+    --accent: #3a78f2;
+    --accent-hover: #2c66db;
+    --good: #16935b;
+    --warn: #a86a0f;
+    --bad: #db3b3b;
+    --overlay: rgba(20, 27, 45, .35);
+    --shadow: 0 8px 24px rgba(20, 27, 45, .15);
+    color-scheme: light;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Twemoji Country Flags", -apple-system, BlinkMacSystemFont, "Segoe UI", "Ubuntu", "Roboto", sans-serif;
+    font-size: 14px;
+    user-select: none;
+}
+
+#app {
+    height: 100vh;
+}
+
+button {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+button.primary:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+button.danger:hover:not(:disabled) {
+    border-color: var(--bad);
+    color: var(--bad);
+}
+
+input, textarea {
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    width: 100%;
+    user-select: text;
+}
+
+input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+textarea {
+    font-family: ui-monospace, "JetBrains Mono", Consolas, monospace;
+    font-size: 12px;
+    resize: vertical;
+}

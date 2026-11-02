@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Brod
+GenericName=VLESS Client
+GenericName[ru]=VLESS-клиент
+Comment=VLESS client based on sing-box
+Comment[ru]=VLESS-клиент на sing-box
+Exec=brod
+Icon=brod
+Terminal=false
+Categories=Network;
+Keywords=VPN;VLESS;Proxy;Reality;Tunnel;
+StartupWMClass=brod

@@ -1,0 +1,86 @@
+# Linux-пакеты: make packages (deb, rpm, archlinux).
+# VERSION подставляет Makefile из git-тега.
+name: brod
+arch: amd64
+platform: linux
+version: ${VERSION}
+version_schema: semver
+release: 1
+section: net
+priority: optional
+maintainer: mr-tortilla
+description: |
+  Brod — VLESS-клиент на sing-box.
+  Подписки, реальная задержка до серверов, режимы прокси и TUN,
+  исключения по доменам и IP, значок в трее.
+vendor: mr-tortilla
+license: GPL-3.0-or-later
+homepage: https://github.com/mr-tortilla/Brod
+
+contents:
+  - src: build/bin/brod
+    dst: /usr/bin/brod
+    file_info:
+      mode: 0755
+  - src: build/linux/brod.desktop
+    dst: /usr/share/applications/brod.desktop
+    file_info:
+      mode: 0644
+  - src: build/linux/icons/16x16.png
+    dst: /usr/share/icons/hicolor/16x16/apps/brod.png
+  - src: build/linux/icons/32x32.png
+    dst: /usr/share/icons/hicolor/32x32/apps/brod.png
+  - src: build/linux/icons/48x48.png
+    dst: /usr/share/icons/hicolor/48x48/apps/brod.png
+  - src: build/linux/icons/64x64.png
+    dst: /usr/share/icons/hicolor/64x64/apps/brod.png
+  - src: build/linux/icons/128x128.png
+    dst: /usr/share/icons/hicolor/128x128/apps/brod.png
+  - src: build/linux/icons/256x256.png
+    dst: /usr/share/icons/hicolor/256x256/apps/brod.png
+  - src: build/linux/icons/512x512.png
+    dst: /usr/share/icons/hicolor/512x512/apps/brod.png
+
+  # Debian кладёт лицензии в /usr/share/doc/<пакет>, Fedora и Arch — в /usr/share/licenses/<пакет>
+  - src: LICENSE
+    dst: /usr/share/doc/brod/LICENSE
+    packager: deb
+  - src: THIRD_PARTY_LICENSES.txt
+    dst: /usr/share/doc/brod/THIRD_PARTY_LICENSES.txt
+    packager: deb
+  - src: LICENSE
+    dst: /usr/share/licenses/brod/LICENSE
+    packager: rpm
+  - src: THIRD_PARTY_LICENSES.txt
+    dst: /usr/share/licenses/brod/THIRD_PARTY_LICENSES.txt
+    packager: rpm
+  - src: LICENSE
+    dst: /usr/share/licenses/brod/LICENSE
+    packager: archlinux
+  - src: THIRD_PARTY_LICENSES.txt
+    dst: /usr/share/licenses/brod/THIRD_PARTY_LICENSES.txt
+    packager: archlinux
+
+scripts:
+  postinstall: build/linux/postinstall.sh
+  postremove: build/linux/postremove.sh
+
+overrides:
+  # Ubuntu 22.04+, Debian 12+, Mint 21+. В Ubuntu 24.04+ GTK переименован в libgtk-3-0t64.
+  deb:
+    depends:
+      - libgtk-3-0t64 | libgtk-3-0
+      - libwebkit2gtk-4.1-0
+      - libcap2-bin
+  # Зависимости по именам библиотек и файлов: так пакет ставится и в Fedora, и в openSUSE,
+  # где пакеты называются по-разному.
+  rpm:
+    depends:
+      - libgtk-3.so.0()(64bit)
+      - libwebkit2gtk-4.1.so.0()(64bit)
+      - /usr/sbin/setcap
+  archlinux:
+    depends:
+      - gtk3
+      - webkit2gtk-4.1
+      - libcap
