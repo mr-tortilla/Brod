@@ -24,11 +24,11 @@ func TestConfigAccepted(t *testing.T) {
 		{Server: "1.2.3.4", Port: 8443, UUID: "11111111-2222-3333-4444-555555555555", Network: "ws", Security: "tls", Path: "/ws", Host: "h.example", Fingerprint: "firefox"},
 		{Server: "1.2.3.4", Port: 8443, UUID: "11111111-2222-3333-4444-555555555555", Network: "grpc", Security: "tls", ServiceName: "svc"},
 	}
-	bypass, _ := ParseBypass([]string{"ru", "рф", "10.0.0.0/8"})
+	bypass, _ := ParseBypass([]string{"org", "испытание", "10.0.0.0/8"})
 	for _, mode := range []Mode{ModeProxy, ModeTUN} {
 		for _, n := range nodes {
 			opts := Options{
-				Mode: mode, Bypass: bypass, DNS: DNS{Direct: "77.88.8.8", Remote: "1.1.1.1"},
+				Mode: mode, Bypass: bypass, DNS: DNS{Direct: "8.8.8.8", Remote: "1.1.1.1"},
 				BypassLAN: true, DNSStrategy: "ipv4_only", TunStack: "mixed", TunMTU: 9000, StrictRoute: true,
 			}
 			cfg, err := buildConfig(n, opts, 20808, filepath.Join(t.TempDir(), "cache.db"))
@@ -59,10 +59,10 @@ func TestUnsupportedTransport(t *testing.T) {
 
 func TestParseBypass(t *testing.T) {
 	b, invalid := ParseBypass([]string{
-		".ru", "*.su", "рф", "https://Сайт.рф/путь?q=1", "vk.com:443", "ya.ru", "ru",
+		".org", "*.net", "испытание", "https://Пример.испытание/путь?q=1", "example.com:443", "www.example.org", "org",
 		"1.2.3.4", "10.0.0.1/8", "2001:db8::1", "# комментарий", "", "не домен!",
 	})
-	wantDomains := []string{"ru", "su", "xn--p1ai", "xn--80aswg.xn--p1ai", "vk.com", "ya.ru"}
+	wantDomains := []string{"org", "net", "xn--80akhbyknj4f", "xn--e1afmkfd.xn--80akhbyknj4f", "example.com", "www.example.org"}
 	wantCIDRs := []string{"1.2.3.4/32", "10.0.0.0/8", "2001:db8::1/128"}
 	if !slices.Equal(b.Domains, wantDomains) {
 		t.Errorf("domains = %v, want %v", b.Domains, wantDomains)

@@ -12,12 +12,13 @@ var domainRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-
 
 // Bypass — разобранный список исключений: что ходит напрямую, мимо туннеля.
 type Bypass struct {
-	Domains []string // суффиксы: "ru" покрывает ru и *.ru, "example.com" — сайт и все поддомены
+	Domains []string // суффиксы: "org" покрывает всю зону *.org, "example.com" — сайт и все поддомены
 	CIDRs   []string
 }
 
-// ParseBypass понимает домены (в т.ч. кириллические: рф, сайт.рф), зоны (.ru, *.ru),
-// ссылки (https://site.ru/path), IP и подсети. Нераспознанные строки возвращает в invalid.
+// ParseBypass понимает домены (в том числе на национальных алфавитах, они переводятся в punycode),
+// зоны (org, .org, *.org), ссылки (https://example.com/path), IP и подсети.
+// Нераспознанные строки возвращает в invalid.
 func ParseBypass(lines []string) (b Bypass, invalid []string) {
 	seen := map[string]bool{}
 	for _, raw := range lines {
@@ -47,7 +48,7 @@ func ParseBypass(lines []string) (b Bypass, invalid []string) {
 				b.CIDRs = append(b.CIDRs, s)
 			}
 		default:
-			if h, _, ok := strings.Cut(s, ":"); ok { // site.ru:8080
+			if h, _, ok := strings.Cut(s, ":"); ok { // example.com:8080
 				s = h
 			}
 			ascii, err := idna.Lookup.ToASCII(s)

@@ -27,7 +27,6 @@ const saving = ref(false)
 const error = ref('')
 
 const presets: { label: string, items: string[] }[] = [
-  {label: 'Российские зоны', items: ['ru', 'su', 'рф', 'москва', 'дети', 'tatar']},
   {label: 'Локальные сети', items: ['local', 'lan', '192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12']},
 ]
 
@@ -186,7 +185,7 @@ async function save() {
           </label>
           <label class="field">
             <span>DNS напрямую</span>
-            <input v-model="form.directDns" placeholder="77.88.8.8"/>
+            <input v-model="form.directDns" placeholder="8.8.8.8"/>
             <small>Для исключений и адресов самих серверов. Запросы идут открыто, мимо туннеля.</small>
           </label>
           <label class="field">
@@ -203,13 +202,14 @@ async function save() {
         <template v-if="tab === 'bypass'">
           <p class="hint">
             Эти сайты открываются напрямую, без туннеля. По одному на строку:
-            зона (<code>ru</code>, <code>рф</code>), сайт со всеми поддоменами (<code>vk.com</code>),
+            доменная зона (<code>org</code>, <code>local</code>) — все сайты в ней, сайт со всеми поддоменами
+            (<code>example.com</code>), адрес сайта (<code>https://example.com/page</code>),
             IP или подсеть (<code>1.2.3.4</code>, <code>10.0.0.0/8</code>). Строки с <code>#</code> — комментарии.
           </p>
           <div class="presets">
             <button v-for="p in presets" :key="p.label" type="button" @click="addPreset(p.items)">+ {{ p.label }}</button>
           </div>
-          <textarea v-model="bypassText" rows="10" placeholder="ru&#10;рф&#10;gosuslugi.ru&#10;sberbank.ru"/>
+          <textarea v-model="bypassText" rows="10" placeholder="example.com&#10;local&#10;192.168.0.0/16"/>
         </template>
 
         <template v-if="tab === 'ui'">

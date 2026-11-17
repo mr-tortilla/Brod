@@ -11,7 +11,7 @@ import (
 func TestSettingsMissingFieldsGetDefaults(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "settings.json"),
-		[]byte(`{"bypass":["ru"],"directDns":"8.8.8.8","remoteDns":"1.1.1.1"}`), 0o600); err != nil {
+		[]byte(`{"bypass":["example.com"],"directDns":"9.9.9.9","remoteDns":"1.1.1.1"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	s, err := Open(filepath.Join(dir, "profiles.json"))
@@ -23,7 +23,7 @@ func TestSettingsMissingFieldsGetDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	def := DefaultSettings()
-	if st.DirectDNS != "8.8.8.8" || len(st.Bypass) != 1 {
+	if st.DirectDNS != "9.9.9.9" || len(st.Bypass) != 1 {
 		t.Fatalf("сохранённые значения потерялись: %+v", st)
 	}
 	if !st.BypassLAN || !st.SystemProxyInTUN || !st.RefreshOnConnect || st.MixedPort != def.MixedPort ||

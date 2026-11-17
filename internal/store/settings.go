@@ -50,7 +50,7 @@ func DefaultSettings() Settings {
 		TunStack:         "mixed",
 		TunMTU:           9000,
 		StrictRoute:      true,
-		DirectDNS:        "77.88.8.8",
+		DirectDNS:        "8.8.8.8",
 		RemoteDNS:        "1.1.1.1",
 		// IPv6 выключен: многие серверы не выпускают IPv6, и приложения, получив AAAA-запись,
 		// сначала долго пытаются достучаться по IPv6 через туннель.
