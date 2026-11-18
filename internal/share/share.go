@@ -35,7 +35,7 @@ type Data struct {
 }
 
 // Profile: для подписки ссылка и QR — её URL (так профиль будет обновляться у получателя),
-// для остальных — vless:// ссылки всех подключений. JSON — outbound'ы sing-box.
+// для остальных — ссылки соответствующих протоколов всех подключений. JSON — outbound'ы sing-box.
 func Profile(p store.Profile) Data {
 	d := Data{Title: p.Name}
 	if p.Source == store.SourceURL {
@@ -52,7 +52,7 @@ func Profile(p store.Profile) Data {
 	return d
 }
 
-// Node: ссылка vless:// и QR с ней — их понимают все клиенты, включая мобильные;
+// Node: URI выбранного протокола и QR с ним — их понимают все клиенты, включая мобильные;
 // JSON — один outbound sing-box.
 func Node(n node.Node) Data {
 	d := Data{Title: n.Name, Link: node.Link(n), LinkKind: KindLinks}

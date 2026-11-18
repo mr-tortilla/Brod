@@ -53,6 +53,8 @@ func (p *jsonParser) outbound(m map[string]any, remarks string) {
 	switch {
 	case m["type"] == "vless":
 		n, err = fromSingbox(raw)
+	case m["type"] == "hysteria2", m["type"] == "tuic":
+		n, err = fromSingboxOther(raw, fmt.Sprint(m["type"]))
 	case m["protocol"] == "vless":
 		n, err = fromXray(raw)
 	default:
@@ -111,6 +113,42 @@ type singboxOutbound struct {
 		Headers     map[string]any `json:"headers"`
 		ServiceName string         `json:"service_name"`
 	} `json:"transport"`
+}
+
+func fromSingboxOther(raw []byte, protocol string) (Node, error) {
+	var o struct {
+		Tag        string `json:"tag"`
+		Server     string `json:"server"`
+		Port       int    `json:"server_port"`
+		UUID       string `json:"uuid"`
+		Password   string `json:"password"`
+		Up         int    `json:"up_mbps"`
+		Down       int    `json:"down_mbps"`
+		Congestion string `json:"congestion_control"`
+		Relay      string `json:"udp_relay_mode"`
+		TLS        *struct {
+			Enabled    bool     `json:"enabled"`
+			ServerName string   `json:"server_name"`
+			Insecure   bool     `json:"insecure"`
+			ALPN       []string `json:"alpn"`
+		} `json:"tls"`
+		Obfs *struct {
+			Type     string `json:"type"`
+			Password string `json:"password"`
+		} `json:"obfs"`
+	}
+	if err := json.Unmarshal(raw, &o); err != nil {
+		return Node{}, err
+	}
+	n := Node{Protocol: protocol, Name: o.Tag, Server: o.Server, Port: o.Port, UUID: o.UUID, Password: o.Password, UpMbps: o.Up, DownMbps: o.Down, CongestionControl: o.Congestion, UDPRelayMode: o.Relay}
+	if o.TLS != nil {
+		n.SNI, n.Insecure, n.ALPN = o.TLS.ServerName, o.TLS.Insecure, o.TLS.ALPN
+	}
+	if o.Obfs != nil {
+		n.ObfsType, n.ObfsPassword = o.Obfs.Type, o.Obfs.Password
+	}
+	n.finalize()
+	return n, nil
 }
 
 func fromSingbox(raw []byte) (Node, error) {

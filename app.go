@@ -327,11 +327,11 @@ func (a *App) CreateProfileFromURL(name, input string) (CreateResult, error) {
 	text := input
 	if isHTTP(input) {
 		p.Source, p.URL = store.SourceURL, input
-		body, err := subscription.Fetch(a.ctx, input)
+		body, info, err := subscription.Fetch(a.ctx, input)
 		if err != nil {
 			return CreateResult{}, err
 		}
-		text = body
+		text, p.Sub = body, info
 		if p.Name == "" {
 			u, _ := url.Parse(input)
 			p.Name = u.Hostname()
@@ -345,8 +345,9 @@ func (a *App) CreateProfileFromURL(name, input string) (CreateResult, error) {
 	return a.create(p, nodes, skipped)
 }
 
+// CreateProfileFromJSON принимает вставленный конфиг: JSON (xray, sing-box) или YAML (Clash, Mihomo).
 func (a *App) CreateProfileFromJSON(name, input string) (CreateResult, error) {
-	nodes, skipped, err := node.ParseJSON([]byte(input))
+	nodes, skipped, err := node.ParseText(input)
 	if err != nil {
 		return CreateResult{}, err
 	}
@@ -356,7 +357,7 @@ func (a *App) CreateProfileFromJSON(name, input string) (CreateResult, error) {
 
 func (a *App) create(p store.Profile, nodes []node.Node, skipped int) (CreateResult, error) {
 	if len(nodes) == 0 {
-		return CreateResult{}, errors.New("не найдено ни одного VLESS-подключения")
+		return CreateResult{}, errors.New("не найдено ни одного поддерживаемого подключения (VLESS, Hysteria2 или TUIC)")
 	}
 	if p.Name == "" {
 		p.Name = "Профиль " + time.Now().Format("02.01 15:04")
@@ -403,9 +404,12 @@ func (a *App) RefreshProfile(id string) (CreateResult, error) {
 	if p.Source != store.SourceURL {
 		return CreateResult{}, errors.New("обновлять можно только профили-подписки")
 	}
-	body, err := subscription.Fetch(a.ctx, p.URL)
+	body, info, err := subscription.Fetch(a.ctx, p.URL)
 	if err != nil {
 		return CreateResult{}, err
+	}
+	if info != nil {
+		p.Sub = info
 	}
 	nodes, skipped, err := node.ParseText(body)
 	if err != nil {

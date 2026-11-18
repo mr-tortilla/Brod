@@ -26,7 +26,7 @@ packages: build
 	for p in deb rpm archlinux; do VERSION=$(VERSION) nfpm package -f nfpm.yaml -p $$p -t build/dist/ || exit 1; done
 
 test:
-	go test -tags webkit2_41,with_utls,with_gvisor,badlinkname ./...
+	go test -tags webkit2_41,with_utls,with_gvisor,with_quic,badlinkname ./...
 
 # после изменения зависимостей: пересобрать THIRD_PARTY_LICENSES.txt
 licenses:

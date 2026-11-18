@@ -12,8 +12,8 @@ func testNodes(t *testing.T) []node.Node {
 	t.Helper()
 	nodes, _, err := node.ParseText(strings.Join([]string{
 		"vless://11111111-2222-3333-4444-555555555555@nl.example:443?type=tcp&security=reality&sni=www.google.com&fp=chrome&pbk=jNXHt1yRo0vDuchQlIP6Z0ZvjT3KtzVI-T4E7RoLJS0&sid=ab&flow=xtls-rprx-vision#NL",
-		"vless://11111111-2222-3333-4444-555555555555@1.2.3.4:8443?type=ws&security=tls&path=%2Fws&host=h.example#DE",
-		"vless://11111111-2222-3333-4444-555555555555@1.2.3.5:443?type=xhttp&security=tls#XHTTP",
+		"vless://11111111-2222-3333-4444-555555555555@192.0.2.4:8443?type=ws&security=tls&path=%2Fws&host=h.example#DE",
+		"vless://11111111-2222-3333-4444-555555555555@192.0.2.5:443?type=xhttp&security=tls#XHTTP",
 	}, "\n"))
 	if err != nil {
 		t.Fatal(err)

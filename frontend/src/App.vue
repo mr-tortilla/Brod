@@ -24,7 +24,7 @@ import Logo from './components/Logo.vue'
 import ShareDialog from './components/ShareDialog.vue'
 import {setTheme, type ThemePref} from './theme'
 import type {PingState} from './types'
-import {errText} from './format'
+import {errText, formatBytes} from './format'
 
 type Pending = { profileId: string, nodeId: string, name: string }
 type ContextMenu = { x: number, y: number, profileId: string, confirmDelete: boolean }
@@ -35,7 +35,7 @@ const selectedId = ref('')
 const pings = ref<Record<string, Record<string, PingState>>>({})
 const pinging = ref<Record<string, boolean>>({})
 const refreshing = ref(false)
-const sortByPing = ref(true)
+const nodeSort = ref<'ping' | 'name' | 'country'>('ping')
 const showAdd = ref(false)
 const showSettings = ref(false)
 const notice = ref('')
@@ -65,6 +65,9 @@ const menuProfile = computed(() => profiles.value.find(p => p.id === menu.value?
 const offs: (() => void)[] = []
 
 onMounted(async () => {
+  pingTimer = window.setInterval(() => {
+    if (document.visibilityState === 'visible' && selectedId.value) ping(selectedId.value, true)
+  }, PING_INTERVAL)
   offs.push(
       EventsOn('ping:result', (r: { profileId: string, nodeId: string, ms: number, error?: string }) => {
         (pings.value[r.profileId] ??= {})[r.nodeId] = {ms: r.ms, error: r.error}
@@ -100,6 +103,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  clearInterval(pingTimer)
   offs.forEach(off => off())
   window.removeEventListener('click', closeMenu)
   window.removeEventListener('blur', closeMenu)
@@ -147,18 +151,50 @@ function select(id: string) {
   if (!pings.value[id]) ping(id)
 }
 
-async function ping(id = selectedId.value) {
+// background — плановая перепроверка: прежние значения остаются на экране, пока не придут новые.
+async function ping(id = selectedId.value, background = false) {
   const p = profiles.value.find(x => x.id === id)
-  if (!p) return
-  pings.value[id] = Object.fromEntries(p.nodes.map(n => [n.id, 'pending' as const]))
+  if (!p || (background && pinging.value[id])) return
+  if (!background) pings.value[id] = Object.fromEntries(p.nodes.map(n => [n.id, 'pending' as const]))
   pinging.value[id] = true
   try {
     await PingProfile(id)
   } catch (e) {
     pinging.value[id] = false
-    notice.value = errText(e)
+    if (!background) notice.value = errText(e)
   }
 }
+
+// Пинг открытого профиля раз в минуту, пока окно видно (в трее не тратим запросы к серверам).
+const PING_INTERVAL = 60_000
+let pingTimer: number | undefined
+
+// Срок и трафик подписки из ответа сервера подписки.
+const subInfo = computed(() => {
+  const res: Record<string, { text: string, title: string, warn: boolean }> = {}
+  for (const p of profiles.value) {
+    const s = p.sub
+    if (!s) continue
+    const parts: string[] = []
+    const title: string[] = []
+    let warn = false
+    if (s.expire > 0) {
+      const end = new Date(s.expire * 1000)
+      const left = end.getTime() - Date.now()
+      parts.push(left > 0 ? `до ${end.toLocaleDateString('ru-RU')}` : `истекла ${end.toLocaleDateString('ru-RU')}`)
+      title.push(`Подписка до ${end.toLocaleString('ru-RU')}`)
+      warn ||= left < 3 * 86_400_000
+    }
+    if (s.total > 0) {
+      const used = s.upload + s.download
+      parts.push(`${formatBytes(used)} из ${formatBytes(s.total)}`)
+      title.push(`Трафик: использовано ${formatBytes(used)} из ${formatBytes(s.total)}`)
+      warn ||= used >= s.total * 0.9
+    }
+    if (parts.length) res[p.id] = {text: parts.join(' · '), title: title.join('\n'), warn}
+  }
+  return res
+})
 
 // upsert кладёт свежую версию профиля; пингует, только если появились новые подключения.
 function upsert(profile: store.Profile, forcePing = false) {
@@ -276,7 +312,7 @@ function onSettingsSaved(res: { reconnected: boolean }) {
   notice.value = res.reconnected ? 'Настройки сохранены, подключение перезапущено' : ''
 }
 
-const sourceLabel: Record<string, string> = {url: 'подписка', text: 'ссылки', json: 'JSON'}
+const sourceLabel: Record<string, string> = {url: 'подписка', text: 'ссылки', json: 'конфиг'}
 </script>
 
 <template>
@@ -300,6 +336,9 @@ const sourceLabel: Record<string, string> = {url: 'подписка', text: 'с�
         >
           <span class="profile-name">{{ p.name }}</span>
           <span class="profile-meta">{{ sourceLabel[p.source] }} · {{ p.nodes.length }}</span>
+          <span v-if="subInfo[p.id]" class="profile-meta" :class="{warn: subInfo[p.id].warn}" :title="subInfo[p.id].title">
+            {{ subInfo[p.id].text }}
+          </span>
         </button>
         <p v-if="!profiles.length" class="empty">Пока пусто</p>
       </nav>
@@ -329,7 +368,13 @@ const sourceLabel: Record<string, string> = {url: 'подписка', text: 'с�
           </div>
         </div>
         <div class="toolbar">
-          <label class="check"><input type="checkbox" v-model="sortByPing"/> по пингу</label>
+          <label class="sort-control">Сортировать
+            <select v-model="nodeSort" aria-label="Сортировка подключений">
+              <option value="ping">по пингу</option>
+              <option value="country">по стране</option>
+              <option value="name">по имени</option>
+            </select>
+          </label>
           <button :disabled="pinging[selected.id]" @click="ping()">{{ pinging[selected.id] ? 'Проверка…' : 'Пинг' }}</button>
           <button v-if="selected.source === 'url'" :disabled="refreshing" @click="refresh()">
             {{ refreshing ? 'Обновление…' : 'Обновить' }}
@@ -340,7 +385,7 @@ const sourceLabel: Record<string, string> = {url: 'подписка', text: 'с�
       <NodeList
           :nodes="selected.nodes"
           :pings="pings[selected.id] ?? {}"
-          :sort-by-ping="sortByPing"
+          :sort-mode="nodeSort"
           :pinned="selected.pinned ?? []"
           :active-id="activeId"
           :connected-id="connectedId"
@@ -351,7 +396,7 @@ const sourceLabel: Record<string, string> = {url: 'подписка', text: 'с�
     </main>
 
     <main v-else class="placeholder">
-      <p>Добавьте профиль: ссылку на подписку, vless:// ссылки или JSON-конфиг.</p>
+      <p>Добавьте профиль: ссылку на подписку, VLESS / Hysteria2 / TUIC ссылки или конфиг.</p>
       <button class="primary" @click="showAdd = true">+ Добавить профиль</button>
     </main>
 
@@ -480,6 +525,10 @@ nav {
   font-size: 12px;
 }
 
+.profile-meta.warn {
+  color: var(--bad);
+}
+
 .empty {
   padding: 8px;
 }
@@ -520,6 +569,22 @@ h1 {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sort-control select {
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 7px;
 }
 
 .check {

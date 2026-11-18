@@ -17,7 +17,7 @@ const error = ref('')
 
 async function submit() {
   if (!input.value.trim()) {
-    error.value = mode.value === 'url' ? 'Вставьте ссылку' : 'Вставьте JSON'
+    error.value = mode.value === 'url' ? 'Вставьте ссылку' : 'Вставьте конфиг'
     return
   }
   loading.value = true
@@ -40,7 +40,7 @@ async function submit() {
 
       <div class="tabs">
         <button type="button" :class="{active: mode === 'url'}" @click="mode = 'url'">URL / ссылки</button>
-        <button type="button" :class="{active: mode === 'json'}" @click="mode = 'json'">JSON</button>
+        <button type="button" :class="{active: mode === 'json'}" @click="mode = 'json'">Конфиг</button>
       </div>
 
       <label>
@@ -49,12 +49,12 @@ async function submit() {
       </label>
 
       <label v-if="mode === 'url'">
-        Ссылка на подписку или vless:// ссылки (по одной на строку)
-        <textarea v-model="input" rows="5" placeholder="https://sub.example.com/abc  или  vless://..." autofocus/>
+        Ссылка на подписку или ссылки VLESS, Hysteria2, TUIC (по одной на строку)
+        <textarea v-model="input" rows="5" placeholder="https://sub.example.com/abc  или  vless://..., hysteria2://..., tuic://..." autofocus/>
       </label>
       <label v-else>
-        Конфиг xray или sing-box
-        <textarea v-model="input" rows="12" placeholder='{"outbounds": [ ... ]}'/>
+        Конфиг xray или sing-box (JSON), Clash или Mihomo (YAML)
+        <textarea v-model="input" rows="12" placeholder='{"outbounds": [ ... ]}  или  proxies: ...'/>
       </label>
 
       <p v-if="error" class="error">{{ error }}</p>

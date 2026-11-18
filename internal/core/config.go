@@ -33,7 +33,7 @@ type DNS struct {
 // через него приложение меряет задержку и узнаёт внешний IP; в режиме прокси он же
 // прописывается системным прокси.
 func buildConfig(n node.Node, opts Options, mixedPort int, cachePath string) (map[string]any, error) {
-	outbound, err := vlessOutbound(n)
+	outbound, err := protocolOutbound(n)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +117,57 @@ func buildConfig(n node.Node, opts Options, mixedPort int, cachePath string) (ma
 
 // Outbound — подключение в формате outbound sing-box с тегом-именем, для экспорта.
 func Outbound(n node.Node) (map[string]any, error) {
-	o, err := vlessOutbound(n)
+	o, err := protocolOutbound(n)
 	if err != nil {
 		return nil, err
 	}
 	o["tag"] = n.Name
+	return o, nil
+}
+
+func protocolOutbound(n node.Node) (map[string]any, error) {
+	protocol := n.Protocol
+	if protocol == "" {
+		protocol = "vless"
+	}
+	if protocol == "vless" {
+		return vlessOutbound(n)
+	}
+	o := map[string]any{"type": protocol, "tag": tagProxy, "server": n.Server, "server_port": n.Port}
+	tls := map[string]any{"enabled": true}
+	if n.SNI != "" {
+		tls["server_name"] = n.SNI
+	}
+	if len(n.ALPN) > 0 {
+		tls["alpn"] = n.ALPN
+	}
+	if n.Insecure {
+		tls["insecure"] = true
+	}
+	o["tls"] = tls
+	switch protocol {
+	case "hysteria2":
+		o["password"] = n.Password
+		if n.UpMbps > 0 {
+			o["up_mbps"] = n.UpMbps
+		}
+		if n.DownMbps > 0 {
+			o["down_mbps"] = n.DownMbps
+		}
+		if n.ObfsType != "" {
+			o["obfs"] = map[string]any{"type": n.ObfsType, "password": n.ObfsPassword}
+		}
+	case "tuic":
+		o["uuid"], o["password"] = n.UUID, n.Password
+		if n.CongestionControl != "" {
+			o["congestion_control"] = n.CongestionControl
+		}
+		if n.UDPRelayMode != "" {
+			o["udp_relay_mode"] = n.UDPRelayMode
+		}
+	default:
+		return nil, fmt.Errorf("протокол %q не поддерживается", protocol)
+	}
 	return o, nil
 }
 

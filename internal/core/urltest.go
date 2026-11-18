@@ -39,7 +39,7 @@ func TestNodes(ctx context.Context, nodes []node.Node, directDNS, testURL string
 	outbounds := make([]any, 0, len(nodes)+1)
 	testable := make([]string, 0, len(nodes))
 	for _, n := range nodes {
-		o, err := vlessOutbound(n)
+		o, err := protocolOutbound(n)
 		if err != nil {
 			report(n.ID, -1, err)
 			continue

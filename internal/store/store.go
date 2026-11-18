@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/mr-tortilla/brod/internal/node"
+	"github.com/mr-tortilla/brod/internal/subscription"
 )
 
 const (
@@ -26,6 +27,8 @@ type Profile struct {
 	Nodes     []node.Node `json:"nodes"`
 	Pinned    []string    `json:"pinned"` // ID закреплённых подключений в порядке закрепления
 	UpdatedAt time.Time   `json:"updatedAt"`
+	// Sub — срок и трафик подписки из ответа сервера; nil, если сервер их не сообщает.
+	Sub *subscription.Info `json:"sub,omitempty"`
 }
 
 var ErrNotFound = errors.New("профиль не найден")

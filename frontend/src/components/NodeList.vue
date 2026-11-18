@@ -6,7 +6,7 @@ import type {PingState} from '../types'
 const props = defineProps<{
   nodes: node.Node[]
   pings: Record<string, PingState>
-  sortByPing: boolean
+  sortMode: 'ping' | 'name' | 'country'
   pinned: string[]
   activeId: string // подключённое или подключающееся
   connectedId: string
@@ -18,26 +18,49 @@ const emit = defineEmits<{
   share: [id: string]
 }>()
 
-// Закреплённые всегда сверху в порядке закрепления, сортировка по пингу их не трогает.
+// Закреплённые всегда сверху в порядке закрепления; сортировка применяется к остальным.
 const sorted = computed(() => {
   const byId = new Map(props.nodes.map(n => [n.id, n]))
   const pinned = props.pinned.map(id => byId.get(id)).filter((n): n is node.Node => !!n)
   const pinnedSet = new Set(props.pinned)
   const rest = props.nodes.filter(n => !pinnedSet.has(n.id))
-  if (props.sortByPing) {
+  if (props.sortMode === 'ping') {
     const weight = (n: node.Node) => {
       const p = props.pings[n.id]
       if (!p || p === 'pending') return Number.MAX_SAFE_INTEGER - 1
       return p.ms < 0 ? Number.MAX_SAFE_INTEGER : p.ms
     }
     rest.sort((a, b) => weight(a) - weight(b))
+  } else if (props.sortMode === 'name') {
+    rest.sort((a, b) => a.name.localeCompare(b.name, 'ru', {numeric: true, sensitivity: 'base'}))
+  } else {
+    rest.sort((a, b) => {
+      const country = countryKey(a.name).localeCompare(countryKey(b.name), 'ru', {numeric: true, sensitivity: 'base'})
+      return country || a.name.localeCompare(b.name, 'ru', {numeric: true, sensitivity: 'base'})
+    })
   }
   return [...pinned, ...rest]
 })
 
+
+// В именах подписок страна обычно помечена флагом либо двухбуквенным кодом.
+// Если маркера нет, группируем такие подключения по первому слову названия.
+function countryKey(name: string): string {
+  const trimmed = name.trim()
+  const flag = [...trimmed].slice(0, 2).map(c => c.codePointAt(0) ?? 0)
+  if (flag.length === 2 && flag.every(cp => cp >= 0x1f1e6 && cp <= 0x1f1ff)) {
+    return String.fromCodePoint(...flag)
+  }
+  const code = trimmed.match(/^([A-Za-z]{2})(?:\b|[-_\s])/)
+  if (code) return code[1].toUpperCase()
+  return trimmed.split(/[\s_-]+/, 1)[0] ?? ''
+}
+
 const pinnedSet = computed(() => new Set(props.pinned))
 
 function transport(n: node.Node) {
+  if (n.protocol === 'hysteria2') return 'Hysteria2'
+  if (n.protocol === 'tuic') return 'TUIC'
   const parts = [n.network]
   if (n.security !== 'none') parts.push(n.security)
   if (n.flow) parts.push('vision')

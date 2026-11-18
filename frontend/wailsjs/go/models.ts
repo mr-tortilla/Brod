@@ -1,21 +1,21 @@
 export namespace main {
-	
+
 	export class ConnectResult {
 	    profile: store.Profile;
 	    nodeId: string;
 	    refreshError?: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new ConnectResult(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.profile = this.convertValues(source["profile"], store.Profile);
 	        this.nodeId = source["nodeId"];
 	        this.refreshError = source["refreshError"];
 	    }
-	
+
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -37,17 +37,17 @@ export namespace main {
 	export class CreateResult {
 	    profile: store.Profile;
 	    skipped: number;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new CreateResult(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.profile = this.convertValues(source["profile"], store.Profile);
 	        this.skipped = source["skipped"];
 	    }
-	
+
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -69,11 +69,11 @@ export namespace main {
 	export class SaveSettingsResult {
 	    invalid: string[];
 	    reconnected: boolean;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new SaveSettingsResult(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.invalid = source["invalid"];
@@ -84,11 +84,11 @@ export namespace main {
 	    profileId: string;
 	    nodeId: string;
 	    mode: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new StartupAction(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.profileId = source["profileId"];
@@ -100,13 +100,15 @@ export namespace main {
 }
 
 export namespace node {
-	
+
 	export class Node {
 	    id: string;
+	    protocol?: string;
 	    name: string;
 	    server: string;
 	    port: number;
-	    uuid: string;
+	    uuid?: string;
+	    password?: string;
 	    flow?: string;
 	    network: string;
 	    security: string;
@@ -118,18 +120,27 @@ export namespace node {
 	    path?: string;
 	    host?: string;
 	    serviceName?: string;
-	
+	    upMbps?: number;
+	    downMbps?: number;
+	    obfsType?: string;
+	    obfsPassword?: string;
+	    congestionControl?: string;
+	    udpRelayMode?: string;
+	    insecure?: boolean;
+
 	    static createFrom(source: any = {}) {
 	        return new Node(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
+	        this.protocol = source["protocol"];
 	        this.name = source["name"];
 	        this.server = source["server"];
 	        this.port = source["port"];
 	        this.uuid = source["uuid"];
+	        this.password = source["password"];
 	        this.flow = source["flow"];
 	        this.network = source["network"];
 	        this.security = source["security"];
@@ -141,13 +152,20 @@ export namespace node {
 	        this.path = source["path"];
 	        this.host = source["host"];
 	        this.serviceName = source["serviceName"];
+	        this.upMbps = source["upMbps"];
+	        this.downMbps = source["downMbps"];
+	        this.obfsType = source["obfsType"];
+	        this.obfsPassword = source["obfsPassword"];
+	        this.congestionControl = source["congestionControl"];
+	        this.udpRelayMode = source["udpRelayMode"];
+	        this.insecure = source["insecure"];
 	    }
 	}
 
 }
 
 export namespace share {
-	
+
 	export class Data {
 	    title: string;
 	    link: string;
@@ -156,11 +174,11 @@ export namespace share {
 	    qr: string;
 	    qrError?: string;
 	    skipped: number;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new Data(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.title = source["title"];
@@ -176,7 +194,7 @@ export namespace share {
 }
 
 export namespace store {
-	
+
 	export class Profile {
 	    id: string;
 	    name: string;
@@ -186,11 +204,12 @@ export namespace store {
 	    pinned: string[];
 	    // Go type: time
 	    updatedAt: any;
-	
+	    sub?: subscription.Info;
+
 	    static createFrom(source: any = {}) {
 	        return new Profile(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -200,8 +219,9 @@ export namespace store {
 	        this.nodes = this.convertValues(source["nodes"], node.Node);
 	        this.pinned = source["pinned"];
 	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.sub = this.convertValues(source["sub"], subscription.Info);
 	    }
-	
+
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -235,11 +255,11 @@ export namespace store {
 	    ipv6: string;
 	    bypass: string[];
 	    theme: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.mixedPort = source["mixedPort"];
@@ -261,8 +281,31 @@ export namespace store {
 
 }
 
+export namespace subscription {
+
+	export class Info {
+	    upload: number;
+	    download: number;
+	    total: number;
+	    expire: number;
+
+	    static createFrom(source: any = {}) {
+	        return new Info(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.upload = source["upload"];
+	        this.download = source["download"];
+	        this.total = source["total"];
+	        this.expire = source["expire"];
+	    }
+	}
+
+}
+
 export namespace tunnel {
-	
+
 	export class Status {
 	    state: string;
 	    mode: string;
@@ -280,11 +323,11 @@ export namespace tunnel {
 	    countryCode: string;
 	    city: string;
 	    org: string;
-	
+
 	    static createFrom(source: any = {}) {
 	        return new Status(source);
 	    }
-	
+
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.state = source["state"];

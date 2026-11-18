@@ -25,8 +25,11 @@ const linkLabel = computed(() => {
   const d = data.value
   if (!d) return ''
   if (d.linkKind === 'subscription') return 'Ссылка на подписку — у получателя профиль будет обновляться'
-  if (isNode.value) return 'Ссылка vless:// — её понимают все VLESS-клиенты'
-  return `Ссылки vless:// по одной на строку (${d.link.split('\n').length})`
+  if (isNode.value) {
+    const scheme = d.link.split('://', 1)[0]
+    return `Ссылка ${scheme}:// — импортируйте её в совместимый клиент`
+  }
+  return `Ссылки подключений по одной на строку (${d.link.split('\n').length})`
 })
 
 onMounted(async () => {
@@ -99,7 +102,7 @@ async function save(content: string, ext: string) {
           <div class="muted center">
             Отсканируйте в мобильном клиенте: v2rayNG, Hiddify, Streisand, Happ.
             <template v-if="data.linkKind === 'subscription'">Внутри — ссылка на подписку.</template>
-            <template v-else>Внутри — ссылка vless://.</template>
+            <template v-else>Внутри — URI подключения; импортируйте QR в клиент с поддержкой этого протокола.</template>
           </div>
           <div class="actions">
             <button @click="save(data.qr, 'png')">Сохранить PNG</button>

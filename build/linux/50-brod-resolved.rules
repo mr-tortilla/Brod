@@ -1,0 +1,20 @@
+// Brod: режим TUN настраивает DNS своего сетевого интерфейса в systemd-resolved
+// (resolvectl domain / default-route / dns / revert). По умолчанию каждое такое действие
+// требует пароль администратора — окно с паролем при каждом подключении.
+// Правило разрешает только эти четыре действия, только администраторам в активном
+// локальном сеансе. Остальные настройки DNS и удалённые сеансы по-прежнему требуют пароль.
+polkit.addRule(function (action, subject) {
+    var actions = [
+        "org.freedesktop.resolve1.set-dns-servers",
+        "org.freedesktop.resolve1.set-domains",
+        "org.freedesktop.resolve1.set-default-route",
+        "org.freedesktop.resolve1.revert"
+    ];
+    if (actions.indexOf(action.id) < 0 || !subject.local || !subject.active) {
+        return polkit.Result.NOT_HANDLED;
+    }
+    if (subject.isInGroup("sudo") || subject.isInGroup("wheel") || subject.isInGroup("admin")) {
+        return polkit.Result.YES;
+    }
+    return polkit.Result.NOT_HANDLED;
+});

@@ -41,6 +41,20 @@ contents:
   - src: build/linux/icons/512x512.png
     dst: /usr/share/icons/hicolor/512x512/apps/brod.png
 
+  # Режим TUN настраивает DNS интерфейса в systemd-resolved: без этих правил polkit
+  # спрашивает пароль при каждом подключении. Разрешены только 4 действия resolve1,
+  # только администраторам в активном локальном сеансе (см. сами файлы).
+  - src: build/linux/50-brod-resolved.rules
+    dst: /usr/share/polkit-1/rules.d/50-brod-resolved.rules
+    file_info:
+      mode: 0644
+  # то же для старого polkit 0.105 без поддержки JS-правил (Ubuntu 22.04)
+  - src: build/linux/50-brod-resolved.pkla
+    dst: /var/lib/polkit-1/localauthority/10-vendor.d/50-brod-resolved.pkla
+    packager: deb
+    file_info:
+      mode: 0644
+
   # Debian кладёт лицензии в /usr/share/doc/<пакет>, Fedora и Arch — в /usr/share/licenses/<пакет>
   - src: LICENSE
     dst: /usr/share/doc/brod/LICENSE

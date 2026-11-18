@@ -9,7 +9,7 @@
   "author": {
     "name": "mr-tortilla"
   },
-  "build:tags": "webkit2_41,with_utls,with_gvisor,badlinkname",
+  "build:tags": "webkit2_41,with_utls,with_gvisor,with_quic,badlinkname",
   "info": {
     "companyName": "mr-tortilla",
     "productName": "Brod",
